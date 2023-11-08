@@ -21,7 +21,14 @@ io.on('connection', socket => {
   })
 });
 
-httpServer.listen(8080, () => console.log('it is listening on port 8080'))
+httpServer.listen(8080, () => console.log('it is listening on port 8080'));
+
+socket.on('disconnect', message => {
+  console.log('disconnect', users[socket.id]);
+  socket.emit['left', users[socket.id]];
+  delete users[socket.id];
+
+})
 
 
 
