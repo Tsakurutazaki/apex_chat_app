@@ -1,58 +1,50 @@
-const createServer = require('http').createServer;
-const Server = require('socket.io').Server;
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 
-// import { createServer } from 'http'
-// import { server } from 'socket.io' 
-
-const httpServer = createServer()
-
+const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
     origin: "*"
   }
 });
 
-io.on('connection', socket => {
-  console.log(`User ${socket.id} connected`)
+let connectedUsers = {};
 
-  socket.on('message', data => {
-    console.log(data)
-    io.emit('message', `${socket.id.substring(0,5)} : ${data}`)
+io.on('connection', (socket) => {
+  console.log(`User ${socket.id} connected`);
+  console.log('new user');
+
+  socket.on('user_connected', (username) => {
+    connectedUsers[socket.id] = username; 
+
+    io.emit('user_list', connectedUsers);
+  });
+
+
+  socket.on('chatMessage', (data) => {
+    const socketId = data.socketID;
+    const message = data.message;
+    const username = connectedUsers[socket.id];
+    console.log(socketId, '\n', message);
+    io.to(socketId).emit('cmessage',({username,message}));
+
+    // io.emit('message', {username : message});
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected')
+    delete connectedUsers[socket.id];
+
+    io.emit('user_list', Object.values(connectedUsers))
   })
+
+
+  // socket.on('message', data => {
+  //   console.log(data);
+  //   io.emit('message', `${socket.id.substring(0, 5)} : ${data}`);
+  // });
+
+  
 });
 
-httpServer.listen(8080, () => console.log('it is listening on port 8080'));
-
-socket.on('disconnect', message => {
-  console.log('disconnect', users[socket.id]);
-  socket.emit['left', users[socket.id]];
-  delete users[socket.id];
-
-})
-
-
-
-
-// const io = require('socket.io')(3000) // create server
-
-// const users = {}
-
-
-// io.on('connection', socket => {
-
-//   socket.on('new-user', name => {
-//     users[socket.id] = name
-//     socket.broadcast.emit('user-connected', name)
-//   })
-
-//   //socket.emit('chat-message', 'hello world')
-//   socket.on('send-chat', data => {
-
-//     socket.broadcast.emit('message-received', {data: data, user: users[socket.id]})
-//   })
-
-//   socket.on('disconnect', ()=> {
-//     socket.broadcast.emit('user-disconnected', users[socket.id])
-//     delete users[socket.id]
-//   })
-// })
+httpServer.listen(8080, () => console.log('It is listening on port 8080'));

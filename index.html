@@ -1,44 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <style>
-        * {
+  <head>
+    <style>
+      * {
         font-size: 1.5rem;
-    }
+      }
 
-    body {
-        background-color: #333;
-        color: #fff;
-        padding: 1rem;
-    }
-
-    form {
+      form {
         display: flex;
         justify-content: center;
         gap: 4px;
-    }
+      }
 
-    ul {
+      ul {
         display: flex;
         flex-flow: column;
         justify-content: left;
         list-style-type: none;
-    }
+      }
 
-    input,
-    button {
+      input,
+      button {
         border-radius: 10px;
         padding: 10px;
-    }
-  </style>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src = "https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
-  <title>Chat App</title>
-</head>
-<body>
-  <form>
-    <input type = 'text' placeholder = 'Your message'>
-  </form>
-</body>
+      }
+    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <title>Chat App</title>
+  </head>
+  <body>
+    <div id="message-container" style="display: none;" >
+      <form id="send-container">
+        <label id="receiver-name-label"></label>
+        <textarea type="text" id="message-input" ></textarea>
+        <label id="send-button">Send</label>
+      </form>
+    </div>
+    <div id="chatMessages"></div>
+
+    <ul id="userList"></ul>
+  </body>
+  <script>
+    var username = prompt("Enter your name");
+    console.log(username);
+
+    const socket = io("ws://localhost:8080");
+
+    socket.on("connect", () => {
+      socket.emit("user_connected", username);
+    });
+
+    //Listen for the updated user lists from server
+
+    socket.on("user_list", (users) => {
+      const userListElement = document.getElementById("userList");
+      userListElement.innerHTML = "";
+      Object.keys(users).forEach((user) => {
+        const userItem = document.createElement("li");
+        userItem.textContent = users[user];
+        userItem.socketID = user;
+        userListElement.appendChild(userItem);
+        
+        userItem.addEventListener("click", (event) => {
+          const receiver = document.getElementById('receiver-name-label');
+          receiver.innerHTML = event.target.textContent;
+          receiver.socketID = event.target.socketID;
+          const messageContainer = document.getElementById("message-container");
+          messageContainer.style.display = "block";
+          userListElement.style.display = 'none';
+
+        });
+      });
+    });
+
+    const sendButton = document.getElementById('send-button');
+    sendButton.addEventListener('click', (event)=> {
+      const message = document.getElementById('message-input').value;
+      const user = document.getElementById('receiver-name-label');
+      const socketID = user.socketID;
+      console.log(message, user.innerHTML, socketID);
+      socket.emit('chatMessage', {message,socketID} );
+    });
+
+    // function sendMessage() {
+    //   const message = document.getElementById('message-input').value;
+    // } 
+
+    socket.on('cmessage', (data) => {
+      const username = data.username;
+      const message = data.message;
+      console.log('called here');
+      const chatMessages = document.getElementById('chatMessages');
+      const messageElement = document.createElement('div');
+      messageElement.innerHTML = `${username}: ${message}`;
+      chatMessages.appendChild(messageElement);
+    })
+
+
+
+    // socket.emit('storeName',(name))
+  </script>
 </html>
