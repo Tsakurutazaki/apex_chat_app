@@ -1,7 +1,18 @@
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 
-const httpServer = createServer();
+const httpServer = createServer((req, res) => {
+  if (req.url == "/") {
+     res.end('<h1>Hello World</h1>')
+  }
+  if (req.url == '/about') {
+  res.end('<h1>Page About Us</h1>')
+  }
+  if (req.url == '/contact') {
+  res.end('<h1>Page Contact</h1>')
+  }
+  })
+  
 const io = new Server(httpServer, {
   cors: {
     origin: "*"
